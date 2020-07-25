@@ -178,20 +178,36 @@ struct BaseSave
 
     QString readString() {
         const quint16 length = read<quint16>();
+        qDebug() << "String length" << length;
+        if (length == 0) {
+            return {};
+        }
         if (length > 1000) { //arbitrary
             qWarning() << "Unrealistically long string" << length;
             m_ok = false;
             return {};
         }
-        return QString::fromUtf8(read(length));
+        QByteArray content =read(length);
+        for (char &c : content) {
+            c &= 0x7f; // wtffff
+        }
+        qDebug() << content;
+        qDebug() << content.toHex(':');
+        return QString::fromUtf8(content, length);
+//        return QString::fromUtf8(read(length), length);
     }
 
     QStringList readStringList() {
         const quint16 length = read<quint16>();
+        qDebug() << "String list length:" << length;
 
         QStringList ret;
         for (int i=0; i<length; i++) {
             ret.append(readString());
+            if (!m_ok) {
+                qDebug() << ret;
+                return {};
+            }
         }
         return ret;
     }
@@ -201,7 +217,13 @@ struct BaseSave
         QHash<QString, QString> ret;
         for (int i=0; i<length; i++) {
             QString key = readString();
+            if (!m_ok) {
+                return {};
+            }
             QString value = readString();
+            if (!m_ok) {
+                return {};
+            }
             qDebug() << key << value;
             ret.insert(key, value);
         }

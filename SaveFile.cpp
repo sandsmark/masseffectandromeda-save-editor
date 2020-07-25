@@ -168,14 +168,6 @@ bool SaveData::load(bits::bitstream *input, const QSysInfo::Endian endian)
         return false;
     }
 //    m_input->skip(30);
-    if (1){
-        const size_t size = 100;
-        std::string data(size, 0);
-        m_input->peekstring(reinterpret_cast<quint8*>(data.data()), size * 8);
-        qDebug() << QByteArray::fromStdString(data);
-        qDebug() << QByteArray::fromStdString(data).toHex(':');
-//        return false;
-    }
     qDebug() << "Has unknown?" << m_hasUnknown;
 
     // TODO: gibbed's code reads 64 bits here, but there's just 32 until the string starts
@@ -215,6 +207,14 @@ bool SaveData::load(bits::bitstream *input, const QSysInfo::Endian endian)
     m_levelName = readString();
     m_unknown3 = read<quint32>();
     qDebug() << "level name" << m_levelName << "probably related unknown:" << m_unknown3;
+    if (1){
+        const size_t size = 200;
+        std::string data(size, 0);
+        m_input->peekstring(reinterpret_cast<quint8*>(data.data()), size * 8);
+        qDebug() << QByteArray::fromStdString(data);
+        qDebug() << QByteArray::fromStdString(data).toHex(':');
+//        return false;
+    }
 
     m_preloadedBundles = readStringList();
 
