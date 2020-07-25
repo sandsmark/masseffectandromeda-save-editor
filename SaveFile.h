@@ -168,6 +168,7 @@ struct BaseSave
              >
     T read() {
         T data = m_input->read<T>(sizeof(T) * 8);
+//        return data;
         if (m_endian == QSysInfo::LittleEndian) { // bitstream swaps under us?
             return qFromBigEndian<T>(data);
         } else {
@@ -185,10 +186,32 @@ struct BaseSave
         return QString::fromUtf8(read(length));
     }
 
+    QStringList readStringList() {
+        const quint16 length = read<quint16>();
+
+        QStringList ret;
+        for (int i=0; i<length; i++) {
+            ret.append(readString());
+        }
+        return ret;
+    }
+    QHash<QString, QString> readDictionary() {
+        const quint16 length = read<quint16>();
+
+        QHash<QString, QString> ret;
+        for (int i=0; i<length; i++) {
+            QString key = readString();
+            QString value = readString();
+            qDebug() << key << value;
+            ret.insert(key, value);
+        }
+        return ret;
+    }
+
 //    bool readMagic(const char *raw) {
     bool readMagic(const quint64 expected) {
 //        const QByteArray expected(raw, sizeof(quint64));
-//        const QByteArray magic = read(8);//expected.size());
+//        const QByteArray magic = read(expected.size());
 //        if (magic.length() != sizeof(quint64)) {
 //            qWarning() << "short read of magic" << magic.size();
 //            m_ok = false;
@@ -203,7 +226,7 @@ struct BaseSave
             m_ok = false;
             return false;
         }
-        qDebug() << "magic vlaid" << magic << expected;
+//        qDebug() << "magic vlaid" << magic << expected;
         return true;
     }
 
@@ -229,8 +252,12 @@ public:
     quint16 m_saveVersion;
     quint16 m_unknown1;
     quint16 m_unknown2;
+    quint32 m_unknown3;
 
     quint32 m_userBuildInfo;
+    QString m_levelName;
+
+    QStringList m_preloadedBundles;
 };
 
 

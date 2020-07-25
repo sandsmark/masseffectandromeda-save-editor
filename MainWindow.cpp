@@ -9,8 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     m_saveFile = new SaveFile(this);
 
-    QFile file("/home/sandsmark/src/masseffectandromeda-save-editor/Careerfe87459e-0ManualSave");
-//    QFile file("/home/sandsmark/src/masseffectandromeda-save-editor/test.sav");
+    QFile file("/home/sandsmark/src/masseffectandromeda-save-editor/Careerfe87459e-0AutoSave");
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "failed open";
         return;

@@ -144,21 +144,17 @@ bool BaseSave::load()
     m_ok = true;
 
 //    if (!readMagic("FB\0SAVE\n")) {
-    if (!readMagic(0x0A45564153004246ul)) {
+//    if (!readMagic(qToBigEndian<quint64>(0x0A45564153004246ul))) {
+    if (!readMagic(qToLittleEndian<quint64>(0x0A45564153004246ul))) {
         return false;
     }
 
-    qDebug() << m_input->position();
-    m_hasUnknown = read<bool>();
-    qDebug() << m_input->position() << m_hasUnknown;
+    m_hasUnknown = m_input->read<quint8>(4);
     if (m_hasUnknown) {
-        QStringList debugList;
-        for (int i=0; i<27; i++) {
-            m_unknown[i] = read<quint32>();
-            debugList.append(QString::number(m_unknown[i]));
-        }
-        qDebug() << "unknown" << debugList;
+        qDebug() << "Skipped";
+        m_input->skip(27);
     }
+
 
     return m_ok;
 }
@@ -171,19 +167,25 @@ bool SaveData::load(bits::bitstream *input, const QSysInfo::Endian endian)
     if (!BaseSave::load()) {
         return false;
     }
+//    m_input->skip(30);
+    if (1){
+        const size_t size = 100;
+        std::string data(size, 0);
+        m_input->peekstring(reinterpret_cast<quint8*>(data.data()), size * 8);
+        qDebug() << QByteArray::fromStdString(data);
+        qDebug() << QByteArray::fromStdString(data).toHex(':');
+//        return false;
+    }
     qDebug() << "Has unknown?" << m_hasUnknown;
 
-//    qDebug() << "pos after unknown" << m_input->pos();
-    const quint64 rawTimestamp = read<quint64>();
+    // TODO: gibbed's code reads 64 bits here, but there's just 32 until the string starts
+    const quint64 rawTimestamp = read<quint32>();
     qDebug() << "raw timestamp" << rawTimestamp;
-    m_timestamp = QDateTime::fromMSecsSinceEpoch(rawTimestamp / 10000000);
+    m_timestamp = QDateTime::fromSecsSinceEpoch(rawTimestamp);
     qDebug() << "timestamp" << m_timestamp;
-//    const quint16 savefilenameLength = read<quint16>();
-//    qDebug() << "savefilenamelength" << savefilenameLength;
-//    QByteArray filenameRaw = read(savefilenameLength);
-////    qDebug() << "filenameraw" << filenameRaw;
-////    qDebug() << "filenameraw" << filenameRaw.toHex();
-//    m_saveFileName = QString::fromUtf8(filenameRaw);
+    qDebug() << qFromBigEndian<quint32>(rawTimestamp)<< qFromLittleEndian<quint64>(rawTimestamp);
+
+
     m_saveFileName = readString();
     qDebug() << m_saveFileName << m_saveFileName.length();
 
@@ -193,23 +195,28 @@ bool SaveData::load(bits::bitstream *input, const QSysInfo::Endian endian)
         m_ok = false;
 //        return false;
     }
+    m_saveVersion = read<quint16>();
     if (m_saveVersion < 20 || m_saveVersion > 22) {
         qWarning() << "unsupported save version" << m_saveVersion;
         m_ok = false;
-//        return false;
+        return false;
     }
-    m_saveVersion = read<quint16>();
+
     m_unknown1 = read<quint16>();
     m_unknown2 = read<quint16>();
     m_userBuildInfo = read<quint32>();
 
-
     qDebug() << "game version" << m_gameVersion;
-    qDebug() << "save version" << m_gameVersion;
+    qDebug() << "save version" << m_saveVersion;
     qDebug() << "unknown1" << m_unknown1;
     qDebug() << "unknown2" << m_unknown2;
     qDebug() << "user build info" << m_unknown2;
 
+    m_levelName = readString();
+    m_unknown3 = read<quint32>();
+    qDebug() << "level name" << m_levelName << "probably related unknown:" << m_unknown3;
+
+    m_preloadedBundles = readStringList();
 
     return m_ok;
 }
